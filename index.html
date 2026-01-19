@@ -1,0 +1,1315 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>中距離トレーニングメニュー（1ヶ月）</title>
+    <style>
+        :root {
+            --primary: #0056b3;
+            --secondary: #f8f9fa;
+            --accent: #28a745;
+            --text: #333;
+            --border: #dee2e6;
+            --shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            --edit-bg: #fff3cd;
+        }
+        * {
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            color: var(--text);
+            background: #fdfdfd;
+            line-height: 1.6;
+        }
+        /* Layout */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid var(--secondary);
+        }
+        h1 {
+            margin: 0;
+            color: var(--primary);
+        }
+        .subtitle {
+            color: #666;
+            font-size: 0.9rem;
+        }
+        /* Controls */
+        .controls {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin: 20px 0;
+        }
+        button {
+            padding: 8px 16px;
+            border: 1px solid var(--primary);
+            background: white;
+            color: var(--primary);
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        button:hover {
+            background: var(--primary);
+            color: white;
+        }
+        button.active {
+            background: var(--primary);
+            color: white;
+        }
+        button.danger {
+            border-color: #dc3545;
+            color: #dc3545;
+        }
+        button.danger:hover {
+            background: #dc3545;
+            color: white;
+        }
+        /* Toggle Switch */
+        .toggle-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+            justify-content: center;
+        }
+        .toggle-switch {
+            position: relative;
+            width: 60px;
+            height: 34px;
+        }
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 34px;
+        }
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 26px;
+            width: 26px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+        input:checked+.slider {
+            background-color: var(--accent);
+        }
+        input:checked+.slider:before {
+            transform: translateX(26px);
+        }
+        /* Settings Area */
+        .settings-area {
+            background: var(--secondary);
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            align-items: center;
+        }
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        input[type="date"],
+        input[type="text"],
+        textarea,
+        select {
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            width: 100%;
+        }
+        /* Week Tabs */
+        .week-tabs {
+            display: flex;
+            gap: 5px;
+            margin-bottom: 20px;
+            border-bottom: 1px solid var(--border);
+        }
+        .week-tab {
+            padding: 10px 20px;
+            cursor: pointer;
+            border: 1px solid transparent;
+            border-bottom: none;
+            border-radius: 4px 4px 0 0;
+            background: #eee;
+        }
+        .week-tab.active {
+            background: white;
+            border-color: var(--border);
+            border-bottom-color: white;
+            font-weight: bold;
+            color: var(--primary);
+        }
+        /* Grid System */
+        .schedule-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        @media (max-width: 768px) {
+            .schedule-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+        /* Day Card */
+        .day-card {
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 10px;
+            background: white;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            position: relative;
+            min-height: 120px;
+            display: flex;
+            flex-direction: column;
+        }
+        .day-card:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow);
+        }
+        .day-card.today {
+            border: 2px solid var(--accent);
+            background: #f0fff4;
+        }
+        .day-card.selected {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 2px rgba(0, 86, 179, 0.2);
+        }
+        .day-header {
+            font-weight: bold;
+            margin-bottom: 5px;
+            font-size: 0.9rem;
+            display: flex;
+            justify-content: space-between;
+        }
+        .day-title {
+            font-size: 1rem;
+            color: var(--primary);
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        .day-purpose {
+            font-size: 0.8rem;
+            color: #666;
+            font-style: italic;
+            margin-bottom: 5px;
+        }
+        .day-tags {
+            display: flex;
+            gap: 4px;
+            flex-wrap: wrap;
+            margin-top: auto;
+        }
+        .tag {
+            font-size: 0.7rem;
+            padding: 2px 6px;
+            border-radius: 10px;
+            background: #eee;
+            color: #555;
+        }
+        .tag.tag-race {
+            background: #ffebee;
+            color: #c62828;
+        }
+        .tag.tag-rest {
+            background: #e8f5e9;
+            color: #2e7d32;
+        }
+        /* Detail View */
+        .detail-panel {
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 20px;
+            background: white;
+            box-shadow: var(--shadow);
+            margin-top: 20px;
+        }
+        .detail-mode-view,
+        .detail-mode-edit {
+            display: none;
+        }
+        .detail-panel.mode-view .detail-mode-view {
+            display: block;
+        }
+        .detail-panel.mode-edit .detail-mode-edit {
+            display: block;
+        }
+        .detail-header {
+            border-bottom: 1px solid #eee;
+            padding-bottom: 10px;
+            margin-bottom: 15px;
+        }
+        .detail-row {
+            margin-bottom: 15px;
+        }
+        .detail-label {
+            font-weight: bold;
+            color: #555;
+            display: block;
+            margin-bottom: 4px;
+        }
+        .detail-content {
+            white-space: pre-wrap;
+        }
+        .edit-field {
+            margin-bottom: 15px;
+            padding: 10px;
+            background: var(--secondary);
+            border-radius: 4px;
+        }
+        .edit-field label {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        .edit-field.highlight {
+            background: var(--edit-bg);
+            border: 1px solid #ffeeba;
+        }
+        /* Utility */
+        .hidden {
+            display: none !important;
+        }
+        .btn-save {
+            background: var(--accent);
+            border-color: var(--accent);
+            color: white;
+            width: 100%;
+            padding: 12px;
+            font-size: 1.1rem;
+        }
+        .btn-save:hover {
+            background: #218838;
+        }
+        /* Filter */
+        .filters {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+            flex-wrap: wrap;
+        }
+        .filter-chip {
+            padding: 4px 10px;
+            border-radius: 15px;
+            border: 1px solid #ccc;
+            cursor: pointer;
+            font-size: 0.85rem;
+        }
+        .filter-chip.active {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+        /* Modal for Export/Import */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            align-items: center;
+            justify-content: center;
+        }
+        .modal.show {
+            display: flex;
+        }
+        .modal-content {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            width: 90%;
+            max-width: 600px;
+        }
+        .modal-footer {
+            margin-top: 20px;
+            text-align: right;
+        }
+        /* Disclaimer */
+        .disclaimer-box {
+            background: #fff3f3;
+            border: 1px solid #ffc9c9;
+            padding: 15px;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            margin-top: 30px;
+        }
+        .disclaimer-box ul {
+            margin: 5px 0 0 20px;
+            padding: 0;
+        }
+        @media print {
+            .no-print {
+                display: none !important;
+            }
+            .container {
+                max-width: 100%;
+                padding: 0;
+            }
+            .schedule-grid {
+                grid-template-columns: repeat(7, 1fr) !important;
+                gap: 5px;
+            }
+            .day-card {
+                min-height: auto;
+                border: 1px solid #000;
+                page-break-inside: avoid;
+            }
+            body {
+                font-size: 10pt;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>中距離（800m-1500m）トレーニングメニュー</h1>
+            <p class="subtitle">4週間強化計画</p>
+        </header>
+        <div class="disclaimer-box no-print">
+            <strong>⚠️ 重要な注意点：</strong>
+            <ul>
+                <li>痛みや強い疲労を感じる場合は、メニューを中断して休息してください。</li>
+                <li>睡眠と食事（特に鉄分・炭水化物）を十分に摂ることがトレーニングの効果を高めます。</li>
+                <li>貧血や鉄欠乏の兆候がある場合は無理をせず、医療機関を受診してください。</li>
+                <li>設定ペースは目標タイムや当日のコンディションに合わせて調整してください。</li>
+            </ul>
+        </div>
+        <!-- Controls & Settings -->
+        <div class="settings-area no-print">
+            <div class="form-group">
+                <label>プラン開始日:</label>
+                <input type="date" id="startDateInput">
+            </div>
+            <div class="toggle-container">
+                <span>閲覧モード</span>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="modeSwitch">
+                    <span class="slider"></span>
+                </label>
+                <span>編集モード</span>
+            </div>
+            <div class="controls">
+                <button onclick="app.scrollToToday()">今日のメニュー</button>
+                <button onclick="app.showPaceCalc()">ペース計算</button>
+                <button onclick="app.showExportModal()">データの書き出し/読み込み</button>
+                <button class="danger" onclick="app.resetData()">初期化</button>
+            </div>
+        </div>
+        <!-- Filters -->
+        <div class="filters no-print">
+            <span style="align-self: center; font-weight: bold; margin-right: 5px;">絞り込み:</span>
+            <div id="filterContainer" style="display:contents;">
+                <!-- Generated by JS -->
+            </div>
+        </div>
+        <!-- Week Tabs -->
+        <div class="week-tabs no-print" id="weekTabs">
+            <button class="week-tab active" onclick="app.setWeek(0)">Week 1</button>
+            <button class="week-tab" onclick="app.setWeek(1)">Week 2</button>
+            <button class="week-tab" onclick="app.setWeek(2)">Week 3</button>
+            <button class="week-tab" onclick="app.setWeek(3)">Week 4</button>
+        </div>
+        <!-- Calendar Grid -->
+        <div class="schedule-grid" id="scheduleGrid">
+            <!-- Generated by JS -->
+        </div>
+        <!-- Detail Panel -->
+        <div class="detail-panel hidden" id="detailPanel">
+            <div class="detail-header">
+                <h2 id="detailDate"></h2>
+            </div>
+            <!-- View Mode Content -->
+            <div class="detail-mode-view">
+                <div class="detail-row">
+                    <span class="detail-label">テーマ/タイトル</span>
+                    <div class="detail-content" id="viewTitle"
+                        style="font-size:1.2rem; font-weight:bold; color:var(--primary);"></div>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">目的</span>
+                    <div class="detail-content" id="viewPurpose"></div>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">メニュー</span>
+                    <div class="detail-content" id="viewMenu"
+                        style="background:#f8f9fa; padding:10px; border-left:4px solid var(--primary);"></div>
+                </div>
+                <div class="detail-row" style="display:flex; gap:20px;">
+                    <div>
+                        <span class="detail-label">強度 (RPE)</span>
+                        <div class="detail-content" id="viewRpe"></div>
+                    </div>
+                    <div>
+                        <span class="detail-label">目安ペース</span>
+                        <div class="detail-content" id="viewPace"></div>
+                    </div>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">ポイント</span>
+                    <div class="detail-content" id="viewPoints"></div>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">補強</span>
+                    <div class="detail-content" id="viewStrength"></div>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">注意点</span>
+                    <div class="detail-content" id="viewCaution" style="color:#d32f2f;"></div>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">タグ</span>
+                    <div class="detail-content" id="viewTags"></div>
+                </div>
+            </div>
+            <!-- Edit Mode Content -->
+            <div class="detail-mode-edit">
+                <div class="edit-field highlight">
+                    <label>タイトル (例: 400mインターバル)</label>
+                    <input type="text" id="editTitle">
+                </div>
+                <div class="edit-field">
+                    <label>今日の目的</label>
+                    <input type="text" id="editPurpose">
+                </div>
+                <div class="edit-field highlight">
+                    <label>メニュー詳細 (改行可)</label>
+                    <textarea id="editMenu" rows="5"></textarea>
+                </div>
+                <div style="display:flex; gap:10px;">
+                    <div class="edit-field" style="flex:1;">
+                        <label>強度 RPE (1-10)</label>
+                        <select id="editRpe">
+                            <option value="1">1 (非常に楽)</option>
+                            <option value="3">3 (楽)</option>
+                            <option value="5">5 (普通)</option>
+                            <option value="7">7 (ややきつい)</option>
+                            <option value="9">9 (きつい)</option>
+                            <option value="10">10 (限界)</option>
+                        </select>
+                    </div>
+                    <div class="edit-field" style="flex:1;">
+                        <label>目安ペース</label>
+                        <input type="text" id="editPace">
+                    </div>
+                </div>
+                <div class="edit-field">
+                    <label>ポイント (箇条書き推奨)</label>
+                    <textarea id="editPoints" rows="3"></textarea>
+                </div>
+                <div class="edit-field">
+                    <label>補強</label>
+                    <input type="text" id="editStrength">
+                </div>
+                <div class="edit-field">
+                    <label>注意点</label>
+                    <input type="text" id="editCaution">
+                </div>
+                <div class="edit-field">
+                    <label>タグ選択</label>
+                    <div style="display:flex; gap:10px; flex-wrap:wrap;" id="editTagsContainer">
+                        <!-- Checkboxes generated by JS -->
+                    </div>
+                </div>
+                <button class="btn-save" onclick="app.saveCurrentDay()">保存する</button>
+            </div>
+        </div>
+        <footer style="margin-top: 50px; text-align: center; color: #999; font-size: 0.8rem; padding-bottom: 20px;">
+            &copy; 2026 Middle Distance Training Planner
+        </footer>
+    </div>
+    <!-- Import/Export Modal -->
+    <div id="ioModal" class="modal">
+        <div class="modal-content">
+            <h3>データの読み書き</h3>
+            <p>現在のデータをJSON形式で書き出したり、JSONを貼り付けて読み込むことができます。</p>
+            <textarea id="ioTextarea" rows="10" style="width:100%; font-family:monospace; font-size:12px;"></textarea>
+            <div class="modal-footer">
+                <button onclick="app.copyToClipboard()">コピー</button>
+                <button onclick="app.importFromTextarea()"
+                    style="background:var(--accent); color:white; border:none;">読み込んで適用</button>
+                <button onclick="document.getElementById('ioModal').classList.remove('show')" class="danger"
+                    style="margin-left:auto;">閉じる</button>
+            </div>
+        </div>
+    </div>
+    <!-- Pace Calculator Modal -->
+    <div id="paceModal" class="modal">
+        <div class="modal-content">
+            <h3>ペース計算機 (1500m基準)</h3>
+            <p>1500mの目標タイムまたはベストタイムを入力してください。</p>
+            <div class="form-group">
+                <label>1500m タイム (例: 4:30)</label>
+                <input type="text" id="pbInput" placeholder="4:30"
+                    style="font-size:1.2rem; width:100px; text-align:center;">
+            </div>
+            <button onclick="app.calculatePaces()"
+                style="width:100%; margin-top:10px; background:var(--primary); color:white;">計算する</button>
+            <div id="paceResult" style="margin-top:20px; display:none;">
+                <table style="width:100%; border-collapse:collapse; font-size:0.9rem;">
+                    <thead>
+                        <tr style="background:#eee; text-align:left;">
+                            <th style="padding:8px; border:1px solid #ddd;">強度/種類</th>
+                            <th style="padding:8px; border:1px solid #ddd;">400m換算</th>
+                            <th style="padding:8px; border:1px solid #ddd;">1000m換算</th>
+                        </tr>
+                    </thead>
+                    <tbody id="paceTableBody">
+                        <!-- JS Generated -->
+                    </tbody>
+                </table>
+                <p style="font-size:0.8rem; color:#666; margin-top:10px;">※目安です。個人の特性により調整してください。</p>
+            </div>
+            <div class="modal-footer">
+                <button onclick="document.getElementById('paceModal').classList.remove('show')">閉じる</button>
+            </div>
+        </div>
+    </div>
+    <script>
+        /**
+         * Application Logic
+         */
+        const TAG_OPTIONS = ['土台', '閾値', 'スピード持久', 'レースペース', '回復', '800m', '1500m', 'ドリル'];
+        const DAY_NAMES = ['月', '火', '水', '木', '金', '土', '日']; // Starting Monday as per context
+        const DEFAULT_PLAN = [
+            // Week 1
+            {
+                dayId: 0,
+                title: 'Jog 8〜10km＋流し',
+                purpose: '冬期で落ちた有酸素能力の回復\n流しで神経系を目覚めさせる',
+                menu: '・Up 2km\n・Jog 8-10km\n・流し 100m×3-5\n・Down 2km',
+                points: '・リラックスして走る\n・流しは7-8割の出力でフォーム重視',
+                rpe: 4,
+                pace: '心地よいペース',
+                strength: 'なし',
+                caution: '無理をしない',
+                tags: ['土台', '回復']
+            },
+            {
+                dayId: 1,
+                title: '1000m×4 (R=2’30)',
+                purpose: '1500mに必要な「ややキツいペース」を体に思い出させる\n心肺と脚を同時に鍛えるベース練習',
+                menu: '・Up 3km\n・1000m×4本 (Rec=2分30秒)\n・Down 3km',
+                points: '・設定タイムを守る\n・ラスト1本までフォームを崩さない',
+                rpe: 8,
+                pace: 'レースペースよりやや遅め',
+                strength: 'なし',
+                caution: '',
+                tags: ['スピード持久', 'ポイント練習']
+            },
+            {
+                dayId: 2,
+                title: 'Jog 6〜8km＋補強',
+                purpose: '前日の疲労回復\n股関節・体幹の安定＝後半フォーム崩れ防止',
+                menu: '・Jog 6-8km (芝生など柔らかい路面推奨)',
+                points: '・疲労抜きを優先',
+                rpe: 3,
+                pace: 'Slow',
+                strength: '腹筋・背筋・側筋 各30回\nプランク系',
+                caution: '',
+                tags: ['回復', '補強']
+            },
+            {
+                dayId: 3,
+                title: '300m×6 (R=3’)',
+                purpose: '800mに必要なスピードの再確認\n速さを「楽に出す」感覚づくり',
+                menu: '・Up 3km\n・300m×6 (Rec=3分 ウォーク/ジョグ)\n・Down 3km',
+                points: '・大きな動きで\n・力まずにスピードに乗る',
+                rpe: 7,
+                pace: '800mレースペース',
+                strength: 'なし',
+                caution: 'ハムストリングスの違和感に注意',
+                tags: ['スピード持久', '800m', 'ポイント練習']
+            },
+            {
+                dayId: 4,
+                title: 'Jog 6km or OFF',
+                purpose: '疲労管理\n次のポイント練習の質を高める',
+                menu: '・完全休養 または 軽いJog 6km',
+                points: '・少しでも重さを感じたら休む',
+                rpe: 2,
+                pace: 'Very Slow',
+                strength: 'ストレッチ重点',
+                caution: '',
+                tags: ['回復']
+            },
+            {
+                dayId: 5,
+                title: '12kmビルドアップ',
+                purpose: '有酸素能力の底上げ\n後半にペースを上げる＝レース後半の粘り',
+                menu: '・12km走\n・ラスト3kmをペースアップ',
+                points: '・前半は余裕を持って\n・後半はしっかり追い込む',
+                rpe: 7,
+                pace: '各自調整 (ビルドアップ)',
+                strength: 'なし',
+                caution: '',
+                tags: ['土台', 'スピード持久', 'ポイント練習']
+            },
+            {
+                dayId: 6,
+                title: 'OFF (完全休養)',
+                purpose: '完全回復\n自律神経のリセット',
+                menu: '・練習なし',
+                points: '・リフレッシュする\n・美味しいものを食べる',
+                rpe: 1,
+                pace: '-',
+                strength: 'なし',
+                caution: '',
+                tags: ['回復']
+            },
+            // Week 2: Adapt to Race Pace
+            {
+                dayId: 7,
+                title: 'Jog 8〜10km＋流し',
+                purpose: '冬期で落ちた有酸素能力の回復\n流しで神経系を目覚めさせる',
+                menu: '・Up 2km\n・Jog 8-10km\n・流し 100m×3-5\n・Down 2km',
+                points: '・リラックスして走る',
+                rpe: 4,
+                pace: '心地よいペース',
+                strength: 'なし',
+                caution: '',
+                tags: ['土台', '回復']
+            },
+            {
+                dayId: 8,
+                title: '600m＋400m＋300m ×2セット',
+                purpose: '距離ごとのペース感覚を体に刻む\n1500後半〜800前半の乳酸耐性強化',
+                menu: '・Up 3km\n・(600m+400m+300m) × 2set\n・セット間休憩 大きく (10-15分)\n・レペティション間 短め (Rec=歩きでつなぐ)',
+                points: '・セット内は集中\n・セット間はしっかり休む',
+                rpe: 9,
+                pace: '1500m〜800m RP',
+                strength: 'なし',
+                caution: '',
+                tags: ['スピード持久', 'レースペース', 'ポイント練習']
+            },
+            {
+                dayId: 9,
+                title: 'Jog 6〜8km＋補強',
+                purpose: '前日の疲労回復\n股関節・体幹の安定',
+                menu: '・Jog 6-8km',
+                points: '',
+                rpe: 3,
+                pace: 'Slow',
+                strength: '体幹補強',
+                caution: '',
+                tags: ['回復', '補強']
+            },
+            {
+                dayId: 10,
+                title: '200m×8 (つなぎJog)',
+                purpose: 'ピッチ向上\nフォームを崩さず速く動かす神経刺激',
+                menu: '・Up 3km\n・200m×8 (Rec=200m Jogつなぎ)\n・Down 2km',
+                points: '・ピッチを意識\n・腰が落ちないように',
+                rpe: 7,
+                pace: '快調に飛ばす',
+                strength: 'なし',
+                caution: '',
+                tags: ['スピード持久', '800m', 'ポイント練習']
+            },
+            {
+                dayId: 11,
+                title: 'Jog 6km or OFF',
+                purpose: '疲労管理',
+                menu: '・完全休養 または 軽いJog 6km',
+                points: '',
+                rpe: 2,
+                pace: 'Very Slow',
+                strength: '',
+                caution: '',
+                tags: ['回復']
+            },
+            {
+                dayId: 12,
+                title: '1000m×3',
+                purpose: '1500mのレースペースを「普通」に感じさせる\n心肺とメンタル両方の強化',
+                menu: '・Up 3km\n・1000m×3 (Rec=十分な休息 or 5-10分)\n・Down 3km',
+                points: '・実戦的なペースで\n・3本揃えることが重要',
+                rpe: 9,
+                pace: '1500m RP',
+                strength: 'なし',
+                caution: '',
+                tags: ['スピード持久', 'レースペース', 'ポイント練習', '1500m']
+            },
+            {
+                dayId: 13,
+                title: 'OFF (完全休養)',
+                purpose: '完全回復',
+                menu: '・練習なし',
+                points: '',
+                rpe: 1,
+                pace: '-',
+                strength: '',
+                caution: '',
+                tags: ['回復']
+            },
+            // Week 3: Race Simulation
+            {
+                dayId: 14,
+                title: 'Jog 8〜10km＋流し',
+                purpose: '有酸素能力維持',
+                menu: '・Up 2km\n・Jog 8-10km\n・流し 100m×3\n・Down 2km',
+                points: '',
+                rpe: 4,
+                pace: '心地よいペース',
+                strength: 'なし',
+                caution: '',
+                tags: ['土台', '回復']
+            },
+            {
+                dayId: 15,
+                title: '1200m＋300m',
+                purpose: '1500m後半＋800m序盤の最も苦しい局面の再現\n「もう一本出せる」という自信づくり',
+                menu: '・Up 3km\n・1200m (Rec=3-5分)\n・300m 全力\n・Down 3km',
+                points: '・1200mはレースの入り〜中盤を想定\n・ラスト300mで切り替える',
+                rpe: 9,
+                pace: 'Race Pace',
+                strength: 'なし',
+                caution: '',
+                tags: ['レースペース', 'ポイント練習', '1500m']
+            },
+            {
+                dayId: 16,
+                title: 'Jog 6〜8km＋補強',
+                purpose: '回復',
+                menu: '・Jog 6-8km',
+                points: '',
+                rpe: 3,
+                pace: 'Slow',
+                strength: '体幹・動き作り',
+                caution: '',
+                tags: ['回復', '補強']
+            },
+            {
+                dayId: 17,
+                title: '400m×4 (R=4’)',
+                purpose: '800mの1周ペースを身体に完全定着\n乳酸が溜まった状態でもフォームを保つ',
+                menu: '・Up 3km\n・400m×4 (Rec=4分 完全休息)\n・Down 3km',
+                points: '・質重視。1本1本集中\n・リカバリー長めでしっかり回復してから走る',
+                rpe: 8,
+                pace: '800m RP',
+                strength: 'なし',
+                caution: '',
+                tags: ['レースペース', '800m', 'ポイント練習']
+            },
+            {
+                dayId: 18,
+                title: 'Jog 6km or OFF',
+                purpose: '疲労管理',
+                menu: '・完全休養 または 軽いJog 6km',
+                points: '',
+                rpe: 2,
+                pace: 'Very Slow',
+                strength: '',
+                caution: '',
+                tags: ['回復']
+            },
+            {
+                dayId: 19,
+                title: '1500m or 800m TT (タイムトライアル)',
+                purpose: '現状の仕上がり確認\nレース前の精神的準備',
+                menu: '・Up 入念に\n・TT 1本\n・Down 十分に',
+                points: '・本番のリハーサル\n・タイムよりもしっかり出し切る感覚',
+                rpe: 10,
+                pace: 'Max',
+                strength: 'なし',
+                caution: '怪我に注意',
+                tags: ['レースペース', 'ポイント練習', '1500m', '800m']
+            },
+            {
+                dayId: 20,
+                title: 'OFF (完全休養)',
+                purpose: '完全回復',
+                menu: '・練習なし',
+                points: '',
+                rpe: 1,
+                pace: '-',
+                strength: '',
+                caution: '',
+                tags: ['回復']
+            },
+            // Week 4: Tapering
+            {
+                dayId: 21,
+                title: 'Jog 6〜8km＋流し',
+                purpose: '疲労を抜きつつ感覚を維持',
+                menu: '・Up 2km\n・Jog 6-8km (通常より短め意識)\n・流し 軽めに',
+                points: '・疲れをためない',
+                rpe: 3,
+                pace: 'Slow',
+                strength: 'ストレッチのみ',
+                caution: '',
+                tags: ['回復', '調整']
+            },
+            {
+                dayId: 22,
+                title: '300m×3',
+                purpose: 'スピード感覚の維持\n疲労を残さず刺激のみ入れる',
+                menu: '・Up 3km\n・300m×3 (Rec=ウォーク十分)\n・Down 2km',
+                points: '・7-8割の力でスピードに乗る\n・追い込まない',
+                rpe: 6,
+                pace: 'RP目安',
+                strength: 'なし',
+                caution: '',
+                tags: ['調整', 'スピード持久']
+            },
+            {
+                dayId: 23,
+                title: 'Jog 4〜6km',
+                purpose: '疲労回復',
+                menu: '・Jog 4-6km',
+                points: '',
+                rpe: 2,
+                pace: 'Slow',
+                strength: '',
+                caution: '',
+                tags: ['回復', '調整']
+            },
+            {
+                dayId: 24,
+                title: '200m×2',
+                purpose: '神経系の最終調整\nレースペースが「軽く感じる」状態を作る',
+                menu: '・Up 2km\n・200m×2 (刺激入れ)\n・Down 2km',
+                points: '・キレ重視\n・気持ちよく終わる',
+                rpe: 5,
+                pace: 'RP',
+                strength: 'なし',
+                caution: '',
+                tags: ['調整', 'スピード持久']
+            },
+            {
+                dayId: 25,
+                title: 'OFF or 軽いJog',
+                purpose: 'エネルギー充填',
+                menu: '・完全休養 または 散歩/軽いジョグ',
+                points: '・炭水化物を多めに摂る',
+                rpe: 1,
+                pace: '-',
+                strength: '',
+                caution: '',
+                tags: ['回復', '調整']
+            },
+            {
+                dayId: 26,
+                title: '大会前日調整 (Jog+流し)',
+                purpose: '翌日のレースへ向けた最終確認',
+                menu: '・Up\n・Jog 2-3km\n・流し 2本\n・ストレッチ',
+                points: '・動きの確認のみ',
+                rpe: 3,
+                pace: '-',
+                strength: '',
+                caution: '早めに寝る',
+                tags: ['調整', 'レースペース']
+            },
+            {
+                dayId: 27,
+                title: '大会当日 (RACE DAY)',
+                purpose: '練習の成果を発揮する',
+                menu: '・レース本番',
+                points: '・自分を信じる',
+                rpe: 10,
+                pace: 'BEST',
+                strength: '',
+                caution: '楽しむ！',
+                tags: ['レースペース', '1500m', '800m']
+            }
+        ];
+        class App {
+            constructor() {
+                this.data = {
+                    startDate: new Date().toISOString().split('T')[0],
+                    pb1500: '', // New field for PB
+                    plan: JSON.parse(JSON.stringify(DEFAULT_PLAN))
+                };
+                this.state = {
+                    currentWeek: 0,
+                    selectedDayId: null,
+                    isEditMode: false,
+                    filters: []
+                };
+                this.el = {
+                    grid: document.getElementById('scheduleGrid'),
+                    detail: document.getElementById('detailPanel'),
+                    tabs: document.getElementById('weekTabs'),
+                    startDate: document.getElementById('startDateInput'),
+                    modeSwitch: document.getElementById('modeSwitch'),
+                    filterContainer: document.getElementById('filterContainer'),
+                    modal: document.getElementById('ioModal'),
+                    ioText: document.getElementById('ioTextarea'),
+                    paceModal: document.getElementById('paceModal'), // New
+                    pbInput: document.getElementById('pbInput'),     // New
+                    paceResult: document.getElementById('paceResult'), // New
+                    paceTable: document.getElementById('paceTableBody') // New
+                };
+                this.init();
+            }
+            init() {
+                this.loadFromStorage();
+                this.renderFilters();
+                this.renderTagsInputs();
+                this.setWeek(0);
+                // Listeners
+                this.el.startDate.value = this.data.startDate;
+                this.el.startDate.addEventListener('change', (e) => {
+                    this.data.startDate = e.target.value;
+                    this.saveToStorage();
+                    this.renderGrid();
+                    if (this.state.selectedDayId !== null) this.renderDetail(this.state.selectedDayId);
+                });
+                this.el.modeSwitch.addEventListener('change', (e) => {
+                    this.state.isEditMode = e.target.checked;
+                    this.el.detail.classList.remove('mode-view', 'mode-edit');
+                    this.el.detail.classList.add(this.state.isEditMode ? 'mode-edit' : 'mode-view');
+                    // Re-render to update UI details if needed, though most is CSS toggle
+                    if (this.state.selectedDayId !== null) {
+                        this.loadEditForm(this.state.selectedDayId);
+                    }
+                });
+            }
+            loadFromStorage() {
+                const saved = localStorage.getItem('md_training_app_v1');
+                if (saved) {
+                    try {
+                        const parsed = JSON.parse(saved);
+                        this.data = parsed;
+                        // Basic migration/validation check could go here
+                        if (!this.data.plan || this.data.plan.length !== 28) {
+                            console.warn('Invalid data found, resetting.');
+                            this.data.plan = JSON.parse(JSON.stringify(DEFAULT_PLAN));
+                        }
+                    } catch (e) {
+                        console.error('Failed to load data', e);
+                    }
+                }
+            }
+            saveToStorage() {
+                localStorage.setItem('md_training_app_v1', JSON.stringify(this.data));
+            }
+            resetData() {
+                if (!confirm('全ての入力データを初期化します。よろしいですか？')) return;
+                this.data.plan = JSON.parse(JSON.stringify(DEFAULT_PLAN));
+                this.data.startDate = new Date().toISOString().split('T')[0];
+                this.el.startDate.value = this.data.startDate;
+                this.saveToStorage();
+                this.renderGrid();
+                this.el.detail.classList.add('hidden');
+                this.state.selectedDayId = null;
+            }
+            // --- Core Rendering ---
+            setWeek(weekIndex) {
+                this.state.currentWeek = weekIndex;
+                // Update Tabs
+                const tabs = this.el.tabs.querySelectorAll('.week-tab');
+                tabs.forEach((t, i) => t.classList.toggle('active', i === weekIndex));
+                this.renderGrid();
+            }
+            renderGrid() {
+                this.el.grid.innerHTML = '';
+                const startDayIndex = this.state.currentWeek * 7;
+                const endDayIndex = startDayIndex + 7;
+                const baseDate = new Date(this.data.startDate);
+                for (let i = startDayIndex; i < endDayIndex; i++) {
+                    const dayData = this.data.plan[i];
+                    // Calculate date
+                    const currentDate = new Date(baseDate);
+                    currentDate.setDate(baseDate.getDate() + i);
+                    const dateStr = `${currentDate.getMonth() + 1}/${currentDate.getDate()}`;
+                    const dayName = DAY_NAMES[i % 7]; // 0=Mon
+                    const isToday = this.isToday(currentDate);
+                    // Filter check
+                    if (this.state.filters.length > 0) {
+                        const hasTag = this.state.filters.some(f => dayData.tags.includes(f));
+                        if (!hasTag) {
+                            // Optional: could hide or dim. Let's dim.
+                            // For now, simpler to just show opacity lower
+                        }
+                    }
+                    const el = document.createElement('div');
+                    el.className = `day-card ${isToday ? 'today' : ''} ${this.state.selectedDayId === i ? 'selected' : ''}`;
+                    if (this.state.filters.length > 0 && !dayData.tags.some(t => this.state.filters.includes(t))) {
+                        el.style.opacity = '0.3';
+                    }
+                    el.innerHTML = `
+                <div class="day-header">
+                    <span>Day ${i + 1} (${dayName})</span>
+                    <span>${dateStr}</span>
+                </div>
+                <div class="day-title">${dayData.title || '(未定)'}</div>
+                <div class="day-purpose">${dayData.purpose || ''}</div>
+                <div class="day-tags">
+                    ${dayData.tags.map(t => `<span class="tag ${t === '回復' ? 'tag-rest' : ''} ${t === 'レースペース' ? 'tag-race' : ''}">${t}</span>`).join('')}
+                </div>
+            `;
+                    el.onclick = () => this.selectDay(i);
+                    this.el.grid.appendChild(el);
+                }
+            }
+            renderFilters() {
+                this.el.filterContainer.innerHTML = '';
+                TAG_OPTIONS.forEach(tag => {
+                    const span = document.createElement('span');
+                    span.className = 'filter-chip';
+                    span.textContent = tag;
+                    span.onclick = () => {
+                        span.classList.toggle('active');
+                        if (span.classList.contains('active')) {
+                            this.state.filters.push(tag);
+                        } else {
+                            this.state.filters = this.state.filters.filter(t => t !== tag);
+                        }
+                        this.renderGrid();
+                    };
+                    this.el.filterContainer.appendChild(span);
+                });
+            }
+            renderTagsInputs() {
+                const container = document.getElementById('editTagsContainer');
+                container.innerHTML = '';
+                TAG_OPTIONS.forEach(tag => {
+                    const label = document.createElement('label');
+                    label.style.display = 'flex';
+                    label.style.alignItems = 'center';
+                    label.style.gap = '4px';
+                    label.style.marginRight = '10px';
+                    label.style.fontWeight = 'normal';
+                    label.style.cursor = 'pointer';
+                    label.innerHTML = `
+                <input type="checkbox" name="editTags" value="${tag}">
+                ${tag}
+            `;
+                    container.appendChild(label);
+                });
+            }
+            isToday(dateObj) {
+                const now = new Date();
+                return dateObj.getDate() === now.getDate() &&
+                    dateObj.getMonth() === now.getMonth() &&
+                    dateObj.getFullYear() === now.getFullYear();
+            }
+            scrollToToday() {
+                // Calculate difference between start date and now
+                const start = new Date(this.data.startDate);
+                const now = new Date();
+                // Reset times
+                start.setHours(0, 0, 0, 0);
+                now.setHours(0, 0, 0, 0);
+                const diffTime = now - start;
+                const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+                if (diffDays >= 0 && diffDays < 28) {
+                    const targetWeek = Math.floor(diffDays / 7);
+                    this.setWeek(targetWeek);
+                    this.selectDay(diffDays);
+                    // Scroll detail into view
+                    this.el.detail.scrollIntoView({ behavior: 'smooth' });
+                } else {
+                    alert('今日のの日付はプラン期間外です。開始日を確認してください。');
+                }
+            }
+            // --- Details & Editing ---
+            selectDay(dayIndex) {
+                this.state.selectedDayId = dayIndex;
+                // Update grid selection UI
+                const cards = this.el.grid.querySelectorAll('.day-card');
+                cards.forEach((c, idx) => {
+                    // Need to map grid index back to dayId
+                    const gridDayStart = this.state.currentWeek * 7;
+                    const currentId = gridDayStart + idx;
+                    c.classList.toggle('selected', currentId === dayIndex);
+                });
+                this.el.detail.classList.remove('hidden');
+                this.el.detail.classList.remove('mode-view', 'mode-edit');
+                this.el.detail.classList.add(this.state.isEditMode ? 'mode-edit' : 'mode-view');
+                this.renderDetail(dayIndex);
+                this.loadEditForm(dayIndex);
+            }
+            renderDetail(dayIndex) {
+                const d = this.data.plan[dayIndex];
+                const baseDate = new Date(this.data.startDate);
+                baseDate.setDate(baseDate.getDate() + dayIndex);
+                const dateStr = `${baseDate.getFullYear()}/${baseDate.getMonth() + 1}/${baseDate.getDate()}`;
+                document.getElementById('detailDate').textContent = `${dateStr} (Day ${dayIndex + 1})`;
+                document.getElementById('viewTitle').textContent = d.title;
+                document.getElementById('viewPurpose').textContent = d.purpose;
+                document.getElementById('viewMenu').textContent = d.menu;
+                document.getElementById('viewRpe').textContent = d.rpe;
+                document.getElementById('viewPace').textContent = d.pace;
+                document.getElementById('viewPoints').textContent = d.points;
+                document.getElementById('viewStrength').textContent = d.strength;
+                document.getElementById('viewCaution').textContent = d.caution;
+                document.getElementById('viewTags').innerHTML = d.tags.map(t => `<span class="tag">${t}</span>`).join(' ');
+            }
+            loadEditForm(dayIndex) {
+                const d = this.data.plan[dayIndex];
+                document.getElementById('editTitle').value = d.title || '';
+                document.getElementById('editPurpose').value = d.purpose || '';
+                document.getElementById('editMenu').value = d.menu || '';
+                document.getElementById('editRpe').value = d.rpe || 5;
+                document.getElementById('editPace').value = d.pace || '';
+                document.getElementById('editPoints').value = d.points || '';
+                document.getElementById('editStrength').value = d.strength || '';
+                document.getElementById('editCaution').value = d.caution || '';
+                const checkboxes = document.querySelectorAll('input[name="editTags"]');
+                checkboxes.forEach(cb => {
+                    cb.checked = d.tags.includes(cb.value);
+                });
+            }
+            saveCurrentDay() {
+                if (this.state.selectedDayId === null) return;
+                const id = this.state.selectedDayId;
+                const tags = [];
+                document.querySelectorAll('input[name="editTags"]:checked').forEach(cb => tags.push(cb.value));
+                const updated = {
+                    dayId: id,
+                    title: document.getElementById('editTitle').value,
+                    purpose: document.getElementById('editPurpose').value,
+                    menu: document.getElementById('editMenu').value,
+                    points: document.getElementById('editPoints').value,
+                    rpe: document.getElementById('editRpe').value,
+                    pace: document.getElementById('editPace').value,
+                    strength: document.getElementById('editStrength').value,
+                    caution: document.getElementById('editCaution').value,
+                    tags: tags
+                };
+                this.data.plan[id] = updated;
+                this.saveToStorage();
+                // Refresh UI
+                this.renderGrid();
+                this.renderDetail(id);
+                alert('保存しました');
+            }
+            // --- Import / Export ---
+            showExportModal() {
+                this.el.modal.classList.add('show');
+                this.el.ioText.value = JSON.stringify(this.data, null, 2);
+            }
+            copyToClipboard() {
+                this.el.ioText.select();
+                document.execCommand('copy');
+                alert('クリップボードにコピーしました');
+            }
+            importFromTextarea() {
+                try {
+                    const json = this.el.ioText.value;
+                    const parsed = JSON.parse(json);
+                    // Simple validation
+                    if (!parsed.plan || !Array.isArray(parsed.plan)) throw new Error('Invalid format');
+                    if (confirm('現在のデータを上書きして読み込みますか？')) {
+                        this.data = parsed;
+                        // Ensure new fields exist if importing old data
+                        if (!this.data.pb1500) this.data.pb1500 = '';
+                        this.saveToStorage();
+                        this.el.startDate.value = this.data.startDate;
+                        this.init(); // Re-init UI
+                        this.el.modal.classList.remove('show');
+                        alert('読み込み完了');
+                    }
+                } catch (e) {
+                    alert('JSONデータの読み込みに失敗しました。形式を確認してください。');
+                }
+            }
+            // --- Pace Calculator ---
+            showPaceCalc() {
+                this.el.paceModal.classList.add('show');
+                if (this.data.pb1500) {
+                    this.el.pbInput.value = this.data.pb1500;
+                    this.calculatePaces();
+                }
+            }
+            calculatePaces() {
+                const input = this.el.pbInput.value.trim();
+                if (!input) return;
+                // Parse "mm:ss" or "m:ss"
+                const parts = input.split(':');
+                let totalSeconds = 0;
+                if (parts.length === 2) {
+                    totalSeconds = parseInt(parts[0]) * 60 + parseInt(parts[1]);
+                } else if (parts.length === 1 && !isNaN(parts[0])) {
+                    // Treat as raw seconds if just number? Or minutes? Let's assume error or seconds
+                    // standard user writes 4:30
+                    totalSeconds = parseInt(parts[0]); // fallback if they write seconds directly
+                } else {
+                    alert('形式は "分:秒" (例 4:30) で入力してください');
+                    return;
+                }
+                if (isNaN(totalSeconds) || totalSeconds <= 0) return;
+                // Save PB
+                this.data.pb1500 = input;
+                this.saveToStorage();
+                const pace1500 = totalSeconds / 1.5; // per km (seconds)
+                const pace400_1500 = totalSeconds * (400 / 1500);
+                // Define Zones
+                // Logic: 
+                // 1500m Race Pace: 100%
+                // 3000m Pace: approx 1.08x
+                // 5000m Pace: approx 1.15x
+                // Threshold (T): approx 1.25x
+                // Easy (Jog): approx 1.6x ~ 1.75x
+                const rows = [
+                    { name: '1500m RP (レースペース)', ratio: 1.0 },
+                    { name: '3000m ペース目安', ratio: 1.08 },
+                    { name: '5000m ペース目安', ratio: 1.15 },
+                    { name: '閾値 (Threshold)', ratio: 1.25 },
+                    { name: 'ジョグ (Easy) 速め', ratio: 1.6 },
+                    { name: 'ジョグ (Easy) ゆっくり', ratio: 1.75 }
+                ];
+                let html = '';
+                rows.forEach(r => {
+                    const secPerKm = pace1500 * r.ratio;
+                    const secPer400 = (secPerKm / 1000) * 400;
+                    html += `
+                <tr>
+                    <td style="padding:8px; border:1px solid #ddd;">${r.name}</td>
+                    <td style="padding:8px; border:1px solid #ddd; font-weight:bold;">${this.fmtTime(secPer400)}</td>
+                    <td style="padding:8px; border:1px solid #ddd;">${this.fmtTime(secPerKm)}</td>
+                </tr>
+            `;
+                });
+                this.el.paceTable.innerHTML = html;
+                this.el.paceResult.style.display = 'block';
+            }
+            fmtTime(seconds) {
+                const m = Math.floor(seconds / 60);
+                const s = Math.round(seconds % 60);
+                return `${m}:${s.toString().padStart(2, '0')}`;
+            }
+        }
+        // Start App
+        const app = new App();
+    </script>
+</body>
+</html>
