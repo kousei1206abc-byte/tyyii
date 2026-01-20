@@ -13,6 +13,8 @@
             --border: #dee2e6;
             --shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
             --edit-bg: #fff3cd;
+            --advice-bg: #e3f2fd;
+            --advice-border: #90caf9;
         }
         * {
             box-sizing: border-box;
@@ -33,7 +35,7 @@
         }
         header {
             text-align: center;
-            margin-bottom: 30px;
+            margin-bottom: 20px;
             padding-bottom: 20px;
             border-bottom: 2px solid var(--secondary);
         }
@@ -149,11 +151,35 @@
             border-radius: 4px;
             width: 100%;
         }
+        /* Perspective / Advice Box */
+        .advice-box {
+            background: var(--advice-bg);
+            border: 1px solid var(--advice-border);
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 25px;
+            color: #0d47a1;
+        }
+        .advice-title {
+            font-weight: bold;
+            font-size: 1.1rem;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .advice-content ul {
+            margin: 0;
+            padding-left: 20px;
+        }
+        .advice-content li {
+            margin-bottom: 5px;
+        }
         /* Week Tabs */
         .week-tabs {
             display: flex;
             gap: 5px;
-            margin-bottom: 20px;
+            margin-bottom: 0;
             border-bottom: 1px solid var(--border);
         }
         .week-tab {
@@ -170,6 +196,16 @@
             border-bottom-color: white;
             font-weight: bold;
             color: var(--primary);
+        }
+        /* Week Theme Banner */
+        .week-theme-banner {
+            background: var(--primary);
+            color: white;
+            padding: 10px 15px;
+            border-radius: 0 0 4px 4px;
+            margin-bottom: 20px;
+            font-weight: bold;
+            text-align: center;
         }
         /* Grid System */
         .schedule-grid {
@@ -333,7 +369,7 @@
             color: white;
             border-color: var(--primary);
         }
-        /* Modal for Export/Import */
+        /* Modal */
         .modal {
             display: none;
             position: fixed;
@@ -400,15 +436,24 @@
     <div class="container">
         <header>
             <h1>中距離（800m-1500m）トレーニングメニュー</h1>
-            <p class="subtitle">4週間強化計画</p>
+            <p class="subtitle">4週間強化計画 + 調整</p>
         </header>
-        <div class="disclaimer-box no-print">
-            <strong>⚠️ 重要な注意点：</strong>
+        <div class="advice-box no-print">
+            <div class="advice-title">💡 大事な視点（防大生・中距離向け）</div>
+            <div class="advice-content">
+                <ul>
+                    <li><strong>「今日は何を鍛える日か」分からない練習はやらない</strong>：目的を常に意識してください。</li>
+                    <li><strong>速く走る ＝ 追い込む、ではない</strong>：リラックスしてスピードを出す感覚が重要です。</li>
+                    <li><strong>疲れている日は</strong> 👉 目的達成できていれば途中で切り上げてOK（無理をして怪我をするのが最悪です）。</li>
+                </ul>
+            </div>
+        </div>
+        <div class="disclaimer-box no-print" style="margin-top:0; margin-bottom:20px;">
+            <strong>⚠️ 基本的な注意点：</strong>
             <ul>
                 <li>痛みや強い疲労を感じる場合は、メニューを中断して休息してください。</li>
                 <li>睡眠と食事（特に鉄分・炭水化物）を十分に摂ることがトレーニングの効果を高めます。</li>
                 <li>貧血や鉄欠乏の兆候がある場合は無理をせず、医療機関を受診してください。</li>
-                <li>設定ペースは目標タイムや当日のコンディションに合わせて調整してください。</li>
             </ul>
         </div>
         <!-- Controls & Settings -->
@@ -416,6 +461,14 @@
             <div class="form-group">
                 <label>プラン開始日:</label>
                 <input type="date" id="startDateInput">
+            </div>
+            <div class="form-group">
+                <label>目標タイム (1500m):</label>
+                <input type="text" id="target1500Input" placeholder="例: 3:55.0">
+            </div>
+            <div class="form-group">
+                <label>目標タイム (800m):</label>
+                <input type="text" id="target800Input" placeholder="例: 1:58.0">
             </div>
             <div class="toggle-container">
                 <span>閲覧モード</span>
@@ -445,6 +498,10 @@
             <button class="week-tab" onclick="app.setWeek(1)">Week 2</button>
             <button class="week-tab" onclick="app.setWeek(2)">Week 3</button>
             <button class="week-tab" onclick="app.setWeek(3)">Week 4</button>
+        </div>
+        <!-- Week Theme Banner -->
+        <div class="week-theme-banner" id="weekThemeBanner">
+            <!-- Theme text injected by JS -->
         </div>
         <!-- Calendar Grid -->
         <div class="schedule-grid" id="scheduleGrid">
@@ -605,355 +662,450 @@
         /**
          * Application Logic
          */
-        const TAG_OPTIONS = ['土台', '閾値', 'スピード持久', 'レースペース', '回復', '800m', '1500m', 'ドリル'];
-        const DAY_NAMES = ['月', '火', '水', '木', '金', '土', '日']; // Starting Monday as per context
+        const TAG_OPTIONS = ['土台', '閾値', 'スピード持久', 'レースペース', '回復', '800m', '1500m', 'ドリル', 'テーパリング'];
+        const DAY_NAMES = ['月', '火', '水', '木', '金', '土', '日']; // Starting Monday
+        // --------- Time helpers ----------
+        function parseTimeToSec(s) {
+            if (!s) return null;
+            const str = String(s).trim();
+            if (!str) return null;
+            if (str.includes(':')) {
+                const [mPart, secPartRaw] = str.split(':');
+                const m = Number(mPart);
+                const sec = Number(secPartRaw);
+                if (!Number.isFinite(m) || !Number.isFinite(sec)) return null;
+                return m * 60 + sec;
+            }
+            const sec = Number(str);
+            return Number.isFinite(sec) ? sec : null;
+        }
+        function formatSec(sec) {
+            if (sec == null || !Number.isFinite(sec)) return '';
+            const m = Math.floor(sec / 60);
+            const s = sec - m * 60;
+            const sInt = Math.floor(s);
+            const dec = Math.round((s - sInt) * 10);
+            const s2 = String(sInt).padStart(2, '0');
+            return `${m}:${s2}.${dec}`;
+        }
+        function computeRepTime(dist, basisSec, basisDist, adjPer400Min, adjPer400Max) {
+            if (!basisSec) return null;
+            const base = basisSec * (dist / basisDist);
+            const scale = dist / 400;
+            const aMin = (adjPer400Min ?? 0) * scale;
+            const aMax = (adjPer400Max ?? adjPer400Min ?? 0) * scale;
+            const tMin = base + Math.min(aMin, aMax);
+            const tMax = base + Math.max(aMin, aMax);
+            if (Math.abs(tMax - tMin) < 0.15) return { single: tMin };
+            return { range: [tMin, tMax] };
+        }
+        function distLabel(m) {
+            if (m >= 1000) return `${m / 1000}km`;
+            return `${m}m`;
+        }
+        const WEEK_THEMES = [
+            "基本の土台作り・回復",
+            "キツさに慣れる（レースペースへの適応）",
+            "レースシミュレーション（本番を想定して仕上げる）",
+            "テーパリング（疲労を抜いてキレだけ残す）"
+        ];
         const DEFAULT_PLAN = [
-            // Week 1
+            // Week 1 (Day1-7)
             {
                 dayId: 0,
-                title: 'Jog 8〜10km＋流し',
-                purpose: '冬期で落ちた有酸素能力の回復\n流しで神経系を目覚めさせる',
-                menu: '・Up 2km\n・Jog 8-10km\n・流し 100m×3-5\n・Down 2km',
-                points: '・リラックスして走る\n・流しは7-8割の出力でフォーム重視',
+                title: 'Jog 8〜10km + 流し',
+                purpose: '有酸素の土台づくり＋神経系を目覚めさせる（フォーム作り）',
+                menu: 'Up：動的ストレッチ＋ドリル\nJog：8〜10km（E）\n流し：100m×4（リラックス）\nDown：ストレッチ',
+                points: '・呼吸を乱さず一定で\n・流しは脱力（力まない）',
                 rpe: 4,
-                pace: '心地よいペース',
-                strength: 'なし',
-                caution: '無理をしない',
-                tags: ['土台', '回復']
+                pace: 'E（楽に会話できる）',
+                paceCalc: [],
+                strength: '股関節/体幹 10分',
+                caution: '疲労が強ければ距離を短縮',
+                tags: ['土台', '回復', 'ドリル']
             },
             {
                 dayId: 1,
-                title: '1000m×4 (R=2’30)',
-                purpose: '1500mに必要な「ややキツいペース」を体に思い出させる\n心肺と脚を同時に鍛えるベース練習',
-                menu: '・Up 3km\n・1000m×4本 (Rec=2分30秒)\n・Down 3km',
-                points: '・設定タイムを守る\n・ラスト1本までフォームを崩さない',
+                title: '1000m×4（R=2’30）',
+                purpose: '1500mに必要なスピード持久の土台（心肺＋脚）',
+                menu: 'Up：Jog 2km＋ドリル＋流し100m×3\n本練習：1000m×4（R=2’30）\nDown：Jog 2km',
+                points: '・揃えるのが最優先\n・ラスト200でフォーム維持',
                 rpe: 8,
-                pace: 'レースペースよりやや遅め',
-                strength: 'なし',
-                caution: '',
-                tags: ['スピード持久', 'ポイント練習']
+                pace: '自動換算（1500RP基準：+5〜8秒/400）',
+                paceCalc: [{ dist: 1000, basis: '1500', adjPer400Min: 5, adjPer400Max: 8 }],
+                strength: '臀部/ハム軽め 2set',
+                caution: '崩れるなら3本で終了OK',
+                tags: ['スピード持久', '1500m', '土台']
             },
             {
                 dayId: 2,
-                title: 'Jog 6〜8km＋補強',
-                purpose: '前日の疲労回復\n股関節・体幹の安定＝後半フォーム崩れ防止',
-                menu: '・Jog 6-8km (芝生など柔らかい路面推奨)',
-                points: '・疲労抜きを優先',
+                title: '回復Jog 6〜8km + 補強',
+                purpose: '前日の疲労回復（次の質を上げる）',
+                menu: 'Jog：6〜8km（E）\nケア：ストレッチ/フォームローラー\n補強：体幹5分',
+                points: '・心拍を上げない\n・接地を静かに',
                 rpe: 3,
-                pace: 'Slow',
-                strength: '腹筋・背筋・側筋 各30回\nプランク系',
-                caution: '',
-                tags: ['回復', '補強']
+                pace: 'E',
+                paceCalc: [],
+                strength: '体幹5分',
+                caution: '張りが強ければOFFでもOK',
+                tags: ['回復', '土台']
             },
             {
                 dayId: 3,
-                title: '300m×6 (R=3’)',
-                purpose: '800mに必要なスピードの再確認\n速さを「楽に出す」感覚づくり',
-                menu: '・Up 3km\n・300m×6 (Rec=3分 ウォーク/ジョグ)\n・Down 3km',
-                points: '・大きな動きで\n・力まずにスピードに乗る',
-                rpe: 7,
-                pace: '800mレースペース',
-                strength: 'なし',
-                caution: 'ハムストリングスの違和感に注意',
-                tags: ['スピード持久', '800m', 'ポイント練習']
+                title: '300m×6（R=3’）',
+                purpose: '800mのスピード刺激（神経＋フォーム）',
+                menu: 'Up：Jog 2km＋ドリル＋流し80m×3\n本練習：300m×6（R=3’）\nDown：Jog 1〜2km',
+                points: '・1本目から出しすぎない\n・全本「同じ動き」で',
+                rpe: 8,
+                pace: '自動換算（800RP基準：±0〜-2秒/400）',
+                paceCalc: [{ dist: 300, basis: '800', adjPer400Min: -2, adjPer400Max: 0 }],
+                strength: '腸腰筋/臀部 2set',
+                caution: 'フォームが崩れたら本数を減らす',
+                tags: ['800m', 'レースペース', 'ドリル']
             },
             {
                 dayId: 4,
                 title: 'Jog 6km or OFF',
-                purpose: '疲労管理\n次のポイント練習の質を高める',
-                menu: '・完全休養 または 軽いJog 6km',
-                points: '・少しでも重さを感じたら休む',
+                purpose: '疲労管理（週末の持久系へつなぐ）',
+                menu: '選択① Jog 6km（E）＋流し60m×2\n選択② 完全休養＋ストレッチ',
+                points: '・明日を軽くする',
                 rpe: 2,
-                pace: 'Very Slow',
-                strength: 'ストレッチ重点',
-                caution: '',
+                pace: 'E',
+                paceCalc: [],
+                strength: 'ストレッチ中心',
+                caution: '睡眠優先',
                 tags: ['回復']
             },
             {
                 dayId: 5,
                 title: '12kmビルドアップ',
-                purpose: '有酸素能力の底上げ\n後半にペースを上げる＝レース後半の粘り',
-                menu: '・12km走\n・ラスト3kmをペースアップ',
-                points: '・前半は余裕を持って\n・後半はしっかり追い込む',
+                purpose: '有酸素強化＋後半上げる感覚（レース後半の粘り）',
+                menu: 'Up：1〜2km\n12km：後半3kmをM〜T（きつすぎない）\nDown：ストレッチ',
+                points: '・後半で呼吸が乱れすぎない範囲\n・ピッチ維持',
                 rpe: 7,
-                pace: '各自調整 (ビルドアップ)',
-                strength: 'なし',
-                caution: '',
-                tags: ['土台', 'スピード持久', 'ポイント練習']
+                pace: '後半：M〜T',
+                paceCalc: [],
+                strength: '体幹3分＋臀部1set',
+                caution: '風邪気味/貧血気味なら普通Jogに変更',
+                tags: ['土台', '閾値', '1500m']
             },
             {
                 dayId: 6,
-                title: 'OFF (完全休養)',
-                purpose: '完全回復\n自律神経のリセット',
-                menu: '・練習なし',
-                points: '・リフレッシュする\n・美味しいものを食べる',
+                title: '完全休養',
+                purpose: '完全回復（次週のレースペース週へ）',
+                menu: '完全休養\n散歩20分＋ストレッチのみ（任意）',
+                points: '・休むのも練習',
                 rpe: 1,
                 pace: '-',
+                paceCalc: [],
                 strength: 'なし',
-                caution: '',
+                caution: '違和感がある部位はケア',
                 tags: ['回復']
             },
-            // Week 2: Adapt to Race Pace
+            // Week 2 (Day8-14)
             {
                 dayId: 7,
-                title: 'Jog 8〜10km＋流し',
-                purpose: '冬期で落ちた有酸素能力の回復\n流しで神経系を目覚めさせる',
-                menu: '・Up 2km\n・Jog 8-10km\n・流し 100m×3-5\n・Down 2km',
-                points: '・リラックスして走る',
+                title: 'Jog 8km + 流し',
+                purpose: '有酸素維持と調整（翌日のポイントに備える）',
+                menu: 'Up：動的ストレッチ＋流し60m×2\nJog：8km（E〜M手前）\n流し：100m×4\nDown：補強10分',
+                points: '・流しは軽く速く\n・疲労を残さない',
                 rpe: 4,
-                pace: '心地よいペース',
-                strength: 'なし',
-                caution: '',
-                tags: ['土台', '回復']
+                pace: 'E〜M手前',
+                paceCalc: [],
+                strength: '股関節（クラムシェル/ヒップリフト）各2set',
+                caution: '脚が重いなら6kmに短縮',
+                tags: ['土台', '回復', 'ドリル']
             },
             {
                 dayId: 8,
-                title: '600m＋400m＋300m ×2セット',
-                purpose: '距離ごとのペース感覚を体に刻む\n1500後半〜800前半の乳酸耐性強化',
-                menu: '・Up 3km\n・(600m+400m+300m) × 2set\n・セット間休憩 大きく (10-15分)\n・レペティション間 短め (Rec=歩きでつなぐ)',
-                points: '・セット内は集中\n・セット間はしっかり休む',
-                rpe: 9,
-                pace: '1500m〜800m RP',
-                strength: 'なし',
-                caution: '',
-                tags: ['スピード持久', 'レースペース', 'ポイント練習']
+                title: '600+400+300 ×2（セット）',
+                purpose: 'ペース感覚の定着＋乳酸耐性（1500後半〜800前半に慣れる）',
+                menu:
+                    `Up：Jog 2km＋ドリル＋流し80m×3
+本練習：〔600（1500RP）＋400（中間）＋300（800RP）〕×2
+レスト：各90秒 / セット間4分
+Down：Jog 2km`,
+                points: '・600は突っ込みすぎない\n・後半ほどフォームを丁寧に',
+                rpe: 8,
+                pace: '自動換算（600=1500RP / 400=中間 / 300=800RP）',
+                paceCalc: [
+                    { dist: 600, basis: '1500', adjPer400Min: 0, adjPer400Max: 0 },
+                    { dist: 400, basis: '1500', adjPer400Min: -2, adjPer400Max: 2 }, // 中間は幅
+                    { dist: 300, basis: '800', adjPer400Min: 0, adjPer400Max: 0 }
+                ],
+                strength: 'ふくらはぎ/ハム軽め 2set',
+                caution: '崩れるなら2セット目は短縮OK',
+                tags: ['レースペース', 'スピード持久', '1500m', '800m']
             },
             {
                 dayId: 9,
-                title: 'Jog 6〜8km＋補強',
-                purpose: '前日の疲労回復\n股関節・体幹の安定',
-                menu: '・Jog 6-8km',
-                points: '',
+                title: '回復Jog 6〜8km',
+                purpose: '回復（疲労を抜いて次のポイントへ）',
+                menu: 'Jog：6〜8km（E）\nケア：ストレッチ＋温冷交代（任意）',
+                points: '・会話できる強度',
                 rpe: 3,
-                pace: 'Slow',
-                strength: '体幹補強',
-                caution: '',
-                tags: ['回復', '補強']
+                pace: 'E',
+                paceCalc: [],
+                strength: '体幹合計5分',
+                caution: '張りが強いならOFF',
+                tags: ['回復', '土台']
             },
             {
                 dayId: 10,
-                title: '200m×8 (つなぎJog)',
-                purpose: 'ピッチ向上\nフォームを崩さず速く動かす神経刺激',
-                menu: '・Up 3km\n・200m×8 (Rec=200m Jogつなぎ)\n・Down 2km',
-                points: '・ピッチを意識\n・腰が落ちないように',
+                title: '200m×8（つなぎJog）',
+                purpose: '神経刺激（速く動かす感覚）＋ピッチ維持',
+                menu:
+                    `Up：Jog 2km＋ドリル＋流し80m×3
+本練習：200m×8（200m jog）
+Down：Jog 1〜2km`,
+                points: '・余裕ある速さで揃える\n・肩の力を抜く',
                 rpe: 7,
-                pace: '快調に飛ばす',
-                strength: 'なし',
-                caution: '',
-                tags: ['スピード持久', '800m', 'ポイント練習']
+                pace: '自動換算（200=800RP〜やや速め）',
+                paceCalc: [{ dist: 200, basis: '800', adjPer400Min: -2, adjPer400Max: 0 }],
+                strength: '腸腰筋/臀部 2set',
+                caution: '寒い日はUp長め',
+                tags: ['スピード持久', '800m', 'ドリル']
             },
             {
                 dayId: 11,
                 title: 'Jog 6km or OFF',
-                purpose: '疲労管理',
-                menu: '・完全休養 または 軽いJog 6km',
-                points: '',
+                purpose: '疲労管理（週末の1000mへ備える）',
+                menu: '選択① Jog 6km（E）＋流し60m×2\n選択② 完全休養＋ストレッチ',
+                points: '・軽さ最優先',
                 rpe: 2,
-                pace: 'Very Slow',
-                strength: '',
-                caution: '',
+                pace: 'E',
+                paceCalc: [],
+                strength: 'ストレッチ中心',
+                caution: '疲労が強いなら迷わずOFF',
                 tags: ['回復']
             },
             {
                 dayId: 12,
-                title: '1000m×3',
-                purpose: '1500mのレースペースを「普通」に感じさせる\n心肺とメンタル両方の強化',
-                menu: '・Up 3km\n・1000m×3 (Rec=十分な休息 or 5-10分)\n・Down 3km',
-                points: '・実戦的なペースで\n・3本揃えることが重要',
-                rpe: 9,
-                pace: '1500m RP',
-                strength: 'なし',
-                caution: '',
-                tags: ['スピード持久', 'レースペース', 'ポイント練習', '1500m']
+                title: '1000m×3（R=3分）',
+                purpose: '1500mレースペース定着（心肺＋メンタル）',
+                menu:
+                    `Up：Jog 2km＋ドリル＋流し100m×3
+本練習：1000m×3（R=3分）
+Down：Jog 2km`,
+                points: '・1本目抑えて揃える\n・ラスト200でフォーム維持',
+                rpe: 8,
+                pace: '自動換算（1000=1500RP）',
+                paceCalc: [{ dist: 1000, basis: '1500', adjPer400Min: 0, adjPer400Max: 0 }],
+                strength: '補強は軽め',
+                caution: '疲労が残るなら×2に減らす',
+                tags: ['レースペース', '1500m', '閾値']
             },
             {
                 dayId: 13,
-                title: 'OFF (完全休養)',
-                purpose: '完全回復',
-                menu: '・練習なし',
-                points: '',
+                title: '完全休養',
+                purpose: '完全回復（次週のレース想定へ）',
+                menu: '完全休養\n散歩20〜30分＋ストレッチ（任意）',
+                points: '・休養と補給（炭水化物＋鉄）',
                 rpe: 1,
                 pace: '-',
-                strength: '',
-                caution: '',
+                paceCalc: [],
+                strength: 'なし',
+                caution: '違和感があれば早めにケア',
                 tags: ['回復']
             },
-            // Week 3: Race Simulation
+            // Week 3 (Day15-21)
             {
                 dayId: 14,
-                title: 'Jog 8〜10km＋流し',
-                purpose: '有酸素能力維持',
-                menu: '・Up 2km\n・Jog 8-10km\n・流し 100m×3\n・Down 2km',
-                points: '',
+                title: 'Jog 7km + 流し',
+                purpose: '調整（週のレース想定練習へ備える）',
+                menu: 'Jog 7km（E）＋流し100m×4\nケア：ストレッチ',
+                points: '・脚を軽く',
                 rpe: 4,
-                pace: '心地よいペース',
-                strength: 'なし',
-                caution: '',
-                tags: ['土台', '回復']
+                pace: 'E',
+                paceCalc: [],
+                strength: '股関節10分',
+                caution: '疲労が強いなら5kmに短縮',
+                tags: ['回復', '土台', 'ドリル']
             },
             {
                 dayId: 15,
-                title: '1200m＋300m',
-                purpose: '1500m後半＋800m序盤の最も苦しい局面の再現\n「もう一本出せる」という自信づくり',
-                menu: '・Up 3km\n・1200m (Rec=3-5分)\n・300m 全力\n・Down 3km',
-                points: '・1200mはレースの入り〜中盤を想定\n・ラスト300mで切り替える',
+                title: '1200m（1500想定）+ 300m（800想定）',
+                purpose: 'レース後半の苦しい局面を再現（耐性＋自信）',
+                menu:
+                    `Up：Jog 2km＋ドリル＋流し100m×3
+本練習：1200m（1500想定）→R=8分→300m（800想定）
+Down：Jog 2km`,
+                points: '・1200は「レースの苦しさ」を作る\n・300でフォーム崩さず押す',
                 rpe: 9,
-                pace: 'Race Pace',
-                strength: 'なし',
-                caution: '',
-                tags: ['レースペース', 'ポイント練習', '1500m']
+                pace: '自動換算（1200=1500RP / 300=800RP）',
+                paceCalc: [
+                    { dist: 1200, basis: '1500', adjPer400Min: 0, adjPer400Max: 0 },
+                    { dist: 300, basis: '800', adjPer400Min: 0, adjPer400Max: 0 }
+                ],
+                strength: 'ケア優先（補強は軽く）',
+                caution: '脚が重いなら1200を1000に短縮',
+                tags: ['レースペース', '1500m', '800m', 'スピード持久']
             },
             {
                 dayId: 16,
-                title: 'Jog 6〜8km＋補強',
-                purpose: '回復',
-                menu: '・Jog 6-8km',
-                points: '',
+                title: '回復Jog 6km',
+                purpose: '回復（疲労を抜いてスピードを出せる状態へ）',
+                menu: 'Jog 6km（E）\nストレッチ＋フォームローラー',
+                points: '・呼吸を整える',
                 rpe: 3,
-                pace: 'Slow',
-                strength: '体幹・動き作り',
-                caution: '',
-                tags: ['回復', '補強']
+                pace: 'E',
+                paceCalc: [],
+                strength: '体幹3分',
+                caution: '張りが強いならOFF',
+                tags: ['回復']
             },
             {
                 dayId: 17,
-                title: '400m×4 (R=4’)',
-                purpose: '800mの1周ペースを身体に完全定着\n乳酸が溜まった状態でもフォームを保つ',
-                menu: '・Up 3km\n・400m×4 (Rec=4分 完全休息)\n・Down 3km',
-                points: '・質重視。1本1本集中\n・リカバリー長めでしっかり回復してから走る',
-                rpe: 8,
-                pace: '800m RP',
-                strength: 'なし',
-                caution: '',
-                tags: ['レースペース', '800m', 'ポイント練習']
+                title: '400m×4（R=4分）',
+                purpose: '800mの1周ペース定着＋乳酸下でフォーム維持',
+                menu:
+                    `Up：Jog 2km＋ドリル＋流し80m×3
+本練習：400m×4（R=4分）
+Down：Jog 2km`,
+                points: '・全本揃える\n・後半ほど腕振り丁寧に',
+                rpe: 9,
+                pace: '自動換算（400=800RP）',
+                paceCalc: [{ dist: 400, basis: '800', adjPer400Min: 0, adjPer400Max: 0 }],
+                strength: '補強はなし〜軽め',
+                caution: '1本でも崩れたら次は中止してOK',
+                tags: ['800m', 'レースペース', 'スピード持久']
             },
             {
                 dayId: 18,
-                title: 'Jog 6km or OFF',
-                purpose: '疲労管理',
-                menu: '・完全休養 または 軽いJog 6km',
-                points: '',
+                title: 'Jog 5〜6km',
+                purpose: '疲労管理（TTへ向けて脚を軽くする）',
+                menu: 'Jog 5〜6km（E）＋流し60m×2（任意）',
+                points: '・軽さ優先',
                 rpe: 2,
-                pace: 'Very Slow',
-                strength: '',
-                caution: '',
+                pace: 'E',
+                paceCalc: [],
+                strength: 'ストレッチ中心',
+                caution: '眠い/重いならOFF',
                 tags: ['回復']
             },
             {
                 dayId: 19,
-                title: '1500m or 800m TT (タイムトライアル)',
-                purpose: '現状の仕上がり確認\nレース前の精神的準備',
-                menu: '・Up 入念に\n・TT 1本\n・Down 十分に',
-                points: '・本番のリハーサル\n・タイムよりもしっかり出し切る感覚',
+                title: 'TT（1500m or 800m どちらか）',
+                purpose: '現状確認＋レース前の精神的準備',
+                menu:
+                    `Up：Jog 2km＋ドリル＋流し100m×4
+本番：800m or 1500m（どちらか1種目）
+Down：Jog 2km`,
+                points: '・両方やらない\n・本番想定のアップで',
                 rpe: 10,
-                pace: 'Max',
-                strength: 'なし',
-                caution: '怪我に注意',
-                tags: ['レースペース', 'ポイント練習', '1500m', '800m']
+                pace: 'TT（全力〜レース想定）',
+                paceCalc: [],
+                strength: 'なし（ケア優先）',
+                caution: '疲労強い場合はTTを「1000m+300m」に変更可',
+                tags: ['レースペース', '800m', '1500m']
             },
             {
                 dayId: 20,
-                title: 'OFF (完全休養)',
-                purpose: '完全回復',
-                menu: '・練習なし',
-                points: '',
+                title: '完全休養',
+                purpose: '回復（次週テーパリングへ）',
+                menu: '完全休養＋ストレッチ',
+                points: '・睡眠と補給',
                 rpe: 1,
                 pace: '-',
-                strength: '',
-                caution: '',
+                paceCalc: [],
+                strength: 'なし',
+                caution: '違和感があれば早めに処置',
                 tags: ['回復']
             },
-            // Week 4: Tapering
+            // Week 4 (Day22-28) taper
             {
                 dayId: 21,
-                title: 'Jog 6〜8km＋流し',
-                purpose: '疲労を抜きつつ感覚を維持',
-                menu: '・Up 2km\n・Jog 6-8km (通常より短め意識)\n・流し 軽めに',
-                points: '・疲れをためない',
-                rpe: 3,
-                pace: 'Slow',
-                strength: 'ストレッチのみ',
-                caution: '',
-                tags: ['回復', '調整']
+                title: 'Jog 6km + 流し',
+                purpose: '疲労を溜めずに動きを整える（テーパリング開始）',
+                menu: 'Jog 6km（E）＋流し100m×3',
+                points: '・脚を軽くする',
+                rpe: 4,
+                pace: 'E',
+                paceCalc: [],
+                strength: '股関節5分',
+                caution: '重いなら5km',
+                tags: ['テーパリング', '回復', 'ドリル']
             },
             {
                 dayId: 22,
-                title: '300m×3',
-                purpose: 'スピード感覚の維持\n疲労を残さず刺激のみ入れる',
-                menu: '・Up 3km\n・300m×3 (Rec=ウォーク十分)\n・Down 2km',
-                points: '・7-8割の力でスピードに乗る\n・追い込まない',
-                rpe: 6,
-                pace: 'RP目安',
-                strength: 'なし',
-                caution: '',
-                tags: ['調整', 'スピード持久']
+                title: '300m×3（刺激）',
+                purpose: 'スピード感覚維持（疲労は残さない）',
+                menu: 'Up：Jog 2km＋流し\n本練習：300m×3（レスト長め）\nDown：Jog 1km',
+                points: '・気持ちよく終える',
+                rpe: 7,
+                pace: '自動換算（300=800RP）',
+                paceCalc: [{ dist: 300, basis: '800', adjPer400Min: 0, adjPer400Max: 0 }],
+                strength: 'なし〜軽め',
+                caution: '張りが出たら即中止',
+                tags: ['テーパリング', '800m', 'ドリル']
             },
             {
                 dayId: 23,
-                title: 'Jog 4〜6km',
-                purpose: '疲労回復',
-                menu: '・Jog 4-6km',
-                points: '',
+                title: 'Jog 5km',
+                purpose: '回復（疲労ゼロに近づける）',
+                menu: 'Jog 5km（E）＋ストレッチ',
+                points: '・心拍を上げない',
                 rpe: 2,
-                pace: 'Slow',
-                strength: '',
-                caution: '',
-                tags: ['回復', '調整']
+                pace: 'E',
+                paceCalc: [],
+                strength: 'ストレッチ中心',
+                caution: '違和感あればOFF',
+                tags: ['テーパリング', '回復']
             },
             {
                 dayId: 24,
-                title: '200m×2',
-                purpose: '神経系の最終調整\nレースペースが「軽く感じる」状態を作る',
-                menu: '・Up 2km\n・200m×2 (刺激入れ)\n・Down 2km',
-                points: '・キレ重視\n・気持ちよく終わる',
-                rpe: 5,
-                pace: 'RP',
+                title: '200m×2（刺激）',
+                purpose: '神経系の最終調整（キレだけ残す）',
+                menu: 'Up：Jog 1.5〜2km＋流し\n本練習：200m×2（十分休む）\nDown：Jog 1km',
+                points: '・速さより軽さ\n・フォーム確認',
+                rpe: 6,
+                pace: '自動換算（200=800RP〜やや速め）',
+                paceCalc: [{ dist: 200, basis: '800', adjPer400Min: -2, adjPer400Max: 0 }],
                 strength: 'なし',
-                caution: '',
-                tags: ['調整', 'スピード持久']
+                caution: 'やり過ぎない',
+                tags: ['テーパリング', '800m', 'ドリル']
             },
             {
                 dayId: 25,
-                title: 'OFF or 軽いJog',
-                purpose: 'エネルギー充填',
-                menu: '・完全休養 または 散歩/軽いジョグ',
-                points: '・炭水化物を多めに摂る',
+                title: '完全休養',
+                purpose: '疲労ゼロ化（本番前日）',
+                menu: '完全休養\nストレッチのみ',
+                points: '・睡眠最優先\n・炭水化物しっかり',
                 rpe: 1,
                 pace: '-',
-                strength: '',
-                caution: '',
-                tags: ['回復', '調整']
+                paceCalc: [],
+                strength: 'なし',
+                caution: '不安でも追い込まない',
+                tags: ['テーパリング', '回復']
             },
             {
                 dayId: 26,
-                title: '大会前日調整 (Jog+流し)',
-                purpose: '翌日のレースへ向けた最終確認',
-                menu: '・Up\n・Jog 2-3km\n・流し 2本\n・ストレッチ',
-                points: '・動きの確認のみ',
-                rpe: 3,
-                pace: '-',
-                strength: '',
-                caution: '早めに寝る',
-                tags: ['調整', 'レースペース']
+                title: '本番（大会）',
+                purpose: 'これまでの練習を出し切る',
+                menu: 'アップはTTの日と同じ流れ\nレース本番',
+                points: '・前半抑えて後半勝負（特に1500）',
+                rpe: 10,
+                pace: '本番',
+                paceCalc: [],
+                strength: 'なし',
+                caution: '体調悪いならコーチ/医療判断',
+                tags: ['レースペース', '800m', '1500m']
             },
             {
                 dayId: 27,
-                title: '大会当日 (RACE DAY)',
-                purpose: '練習の成果を発揮する',
-                menu: '・レース本番',
-                points: '・自分を信じる',
-                rpe: 10,
-                pace: 'BEST',
-                strength: '',
-                caution: '楽しむ！',
-                tags: ['レースペース', '1500m', '800m']
+                title: '回復（Jog or OFF）',
+                purpose: '回復・故障予防（次につなげる）',
+                menu: '選択① Jog 20〜30分（E）\n選択② 完全休養',
+                points: '・痛みチェック',
+                rpe: 2,
+                pace: 'E',
             }
         ];
         class App {
             constructor() {
                 this.data = {
                     startDate: new Date().toISOString().split('T')[0],
-                    pb1500: '', // New field for PB
+                    targets: { t1500: '', t800: '' },
                     plan: JSON.parse(JSON.stringify(DEFAULT_PLAN))
                 };
                 this.state = {
@@ -971,10 +1123,8 @@
                     filterContainer: document.getElementById('filterContainer'),
                     modal: document.getElementById('ioModal'),
                     ioText: document.getElementById('ioTextarea'),
-                    paceModal: document.getElementById('paceModal'), // New
-                    pbInput: document.getElementById('pbInput'),     // New
-                    paceResult: document.getElementById('paceResult'), // New
-                    paceTable: document.getElementById('paceTableBody') // New
+                    t1500: document.getElementById('target1500Input'),
+                    t800: document.getElementById('target800Input')
                 };
                 this.init();
             }
@@ -983,8 +1133,10 @@
                 this.renderFilters();
                 this.renderTagsInputs();
                 this.setWeek(0);
-                // Listeners
+                // Inputs
                 this.el.startDate.value = this.data.startDate;
+                if (this.el.t1500) this.el.t1500.value = this.data.targets?.t1500 || '';
+                if (this.el.t800) this.el.t800.value = this.data.targets?.t800 || '';
                 this.el.startDate.addEventListener('change', (e) => {
                     this.data.startDate = e.target.value;
                     this.saveToStorage();
@@ -995,45 +1147,98 @@
                     this.state.isEditMode = e.target.checked;
                     this.el.detail.classList.remove('mode-view', 'mode-edit');
                     this.el.detail.classList.add(this.state.isEditMode ? 'mode-edit' : 'mode-view');
-                    // Re-render to update UI details if needed, though most is CSS toggle
-                    if (this.state.selectedDayId !== null) {
-                        this.loadEditForm(this.state.selectedDayId);
-                    }
+                    if (this.state.selectedDayId !== null) this.loadEditForm(this.state.selectedDayId);
                 });
+                if (this.el.t1500) {
+                    this.el.t1500.addEventListener('change', (e) => {
+                        this.data.targets.t1500 = e.target.value.trim();
+                        this.saveToStorage();
+                        if (this.state.selectedDayId !== null) this.renderDetail(this.state.selectedDayId);
+                        this.renderGrid();
+                    });
+                }
+                if (this.el.t800) {
+                    this.el.t800.addEventListener('change', (e) => {
+                        this.data.targets.t800 = e.target.value.trim();
+                        this.saveToStorage();
+                        if (this.state.selectedDayId !== null) this.renderDetail(this.state.selectedDayId);
+                        this.renderGrid();
+                    });
+                }
             }
             loadFromStorage() {
-                const saved = localStorage.getItem('md_training_app_v1');
+                const saved = localStorage.getItem('md_training_app_v2');
                 if (saved) {
                     try {
                         const parsed = JSON.parse(saved);
                         this.data = parsed;
-                        // Basic migration/validation check could go here
                         if (!this.data.plan || this.data.plan.length !== 28) {
-                            console.warn('Invalid data found, resetting.');
                             this.data.plan = JSON.parse(JSON.stringify(DEFAULT_PLAN));
                         }
+                        if (!this.data.targets) this.data.targets = { t1500: '', t800: '' };
                     } catch (e) {
                         console.error('Failed to load data', e);
+                    }
+                } else {
+                    // migrate from v1 if exists
+                    const old = localStorage.getItem('md_training_app_v1');
+                    if (old) {
+                        try {
+                            const parsed = JSON.parse(old);
+                            // keep startDate, but overwrite plan with full plan
+                            this.data.startDate = parsed.startDate || this.data.startDate;
+                            this.data.plan = JSON.parse(JSON.stringify(DEFAULT_PLAN));
+                        } catch { }
                     }
                 }
             }
             saveToStorage() {
-                localStorage.setItem('md_training_app_v1', JSON.stringify(this.data));
+                localStorage.setItem('md_training_app_v2', JSON.stringify(this.data));
             }
             resetData() {
                 if (!confirm('全ての入力データを初期化します。よろしいですか？')) return;
                 this.data.plan = JSON.parse(JSON.stringify(DEFAULT_PLAN));
                 this.data.startDate = new Date().toISOString().split('T')[0];
+                this.data.targets = { t1500: '', t800: '' };
                 this.el.startDate.value = this.data.startDate;
+                if (this.el.t1500) this.el.t1500.value = '';
+                if (this.el.t800) this.el.t800.value = '';
                 this.saveToStorage();
                 this.renderGrid();
                 this.el.detail.classList.add('hidden');
                 this.state.selectedDayId = null;
             }
-            // --- Core Rendering ---
+            // --------- Pace rendering ----------
+            getBasisSecs() {
+                const t1500 = parseTimeToSec(this.data.targets?.t1500);
+                const t800 = parseTimeToSec(this.data.targets?.t800);
+                return { t1500, t800 };
+            }
+            buildAutoPaceText(dayData) {
+                const { t1500, t800 } = this.getBasisSecs();
+                const lines = [];
+                if (!dayData.paceCalc || dayData.paceCalc.length === 0) return '';
+                for (const entry of dayData.paceCalc) {
+                    const basis = entry.basis;
+                    const basisSec = basis === '1500' ? t1500 : t800;
+                    const basisDist = basis === '1500' ? 1500 : 800;
+                    if (!basisSec) {
+                        lines.push(`${distLabel(entry.dist)}：目標タイム未入力（${basis}m）`);
+                        continue;
+                    }
+                    const res = computeRepTime(entry.dist, basisSec, basisDist, entry.adjPer400Min, entry.adjPer400Max);
+                    if (!res) continue;
+                    if (res.single != null) {
+                        lines.push(`${distLabel(entry.dist)}：${formatSec(res.single)}`);
+                    } else if (res.range) {
+                        lines.push(`${distLabel(entry.dist)}：${formatSec(res.range[0])} 〜 ${formatSec(res.range[1])}`);
+                    }
+                }
+                return lines.join('\n');
+            }
+            // --------- Rendering ----------
             setWeek(weekIndex) {
                 this.state.currentWeek = weekIndex;
-                // Update Tabs
                 const tabs = this.el.tabs.querySelectorAll('.week-tab');
                 tabs.forEach((t, i) => t.classList.toggle('active', i === weekIndex));
                 this.renderGrid();
@@ -1045,36 +1250,27 @@
                 const baseDate = new Date(this.data.startDate);
                 for (let i = startDayIndex; i < endDayIndex; i++) {
                     const dayData = this.data.plan[i];
-                    // Calculate date
                     const currentDate = new Date(baseDate);
                     currentDate.setDate(baseDate.getDate() + i);
                     const dateStr = `${currentDate.getMonth() + 1}/${currentDate.getDate()}`;
-                    const dayName = DAY_NAMES[i % 7]; // 0=Mon
+                    const dayName = DAY_NAMES[i % 7];
                     const isToday = this.isToday(currentDate);
-                    // Filter check
-                    if (this.state.filters.length > 0) {
-                        const hasTag = this.state.filters.some(f => dayData.tags.includes(f));
-                        if (!hasTag) {
-                            // Optional: could hide or dim. Let's dim.
-                            // For now, simpler to just show opacity lower
-                        }
-                    }
                     const el = document.createElement('div');
                     el.className = `day-card ${isToday ? 'today' : ''} ${this.state.selectedDayId === i ? 'selected' : ''}`;
                     if (this.state.filters.length > 0 && !dayData.tags.some(t => this.state.filters.includes(t))) {
                         el.style.opacity = '0.3';
                     }
                     el.innerHTML = `
-                <div class="day-header">
-                    <span>Day ${i + 1} (${dayName})</span>
-                    <span>${dateStr}</span>
-                </div>
-                <div class="day-title">${dayData.title || '(未定)'}</div>
-                <div class="day-purpose">${dayData.purpose || ''}</div>
-                <div class="day-tags">
-                    ${dayData.tags.map(t => `<span class="tag ${t === '回復' ? 'tag-rest' : ''} ${t === 'レースペース' ? 'tag-race' : ''}">${t}</span>`).join('')}
-                </div>
-            `;
+        <div class="day-header">
+          <span>Day ${i + 1} (${dayName})</span>
+          <span>${dateStr}</span>
+        </div>
+        <div class="day-title">${dayData.title || '(未定)'}</div>
+        <div class="day-purpose">${dayData.purpose || ''}</div>
+        <div class="day-tags">
+          ${dayData.tags.map(t => `<span class="tag ${t === '回復' ? 'tag-rest' : ''} ${t === 'レースペース' ? 'tag-race' : ''}">${t}</span>`).join('')}
+        </div>
+      `;
                     el.onclick = () => this.selectDay(i);
                     this.el.grid.appendChild(el);
                 }
@@ -1087,11 +1283,8 @@
                     span.textContent = tag;
                     span.onclick = () => {
                         span.classList.toggle('active');
-                        if (span.classList.contains('active')) {
-                            this.state.filters.push(tag);
-                        } else {
-                            this.state.filters = this.state.filters.filter(t => t !== tag);
-                        }
+                        if (span.classList.contains('active')) this.state.filters.push(tag);
+                        else this.state.filters = this.state.filters.filter(t => t !== tag);
                         this.renderGrid();
                     };
                     this.el.filterContainer.appendChild(span);
@@ -1108,10 +1301,7 @@
                     label.style.marginRight = '10px';
                     label.style.fontWeight = 'normal';
                     label.style.cursor = 'pointer';
-                    label.innerHTML = `
-                <input type="checkbox" name="editTags" value="${tag}">
-                ${tag}
-            `;
+                    label.innerHTML = `<input type="checkbox" name="editTags" value="${tag}">${tag}`;
                     container.appendChild(label);
                 });
             }
@@ -1122,31 +1312,24 @@
                     dateObj.getFullYear() === now.getFullYear();
             }
             scrollToToday() {
-                // Calculate difference between start date and now
                 const start = new Date(this.data.startDate);
                 const now = new Date();
-                // Reset times
                 start.setHours(0, 0, 0, 0);
                 now.setHours(0, 0, 0, 0);
-                const diffTime = now - start;
-                const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+                const diffDays = Math.floor((now - start) / (1000 * 60 * 60 * 24));
                 if (diffDays >= 0 && diffDays < 28) {
                     const targetWeek = Math.floor(diffDays / 7);
                     this.setWeek(targetWeek);
                     this.selectDay(diffDays);
-                    // Scroll detail into view
                     this.el.detail.scrollIntoView({ behavior: 'smooth' });
                 } else {
-                    alert('今日のの日付はプラン期間外です。開始日を確認してください。');
+                    alert('今日の日付はプラン期間外です。開始日を確認してください。');
                 }
             }
-            // --- Details & Editing ---
             selectDay(dayIndex) {
                 this.state.selectedDayId = dayIndex;
-                // Update grid selection UI
                 const cards = this.el.grid.querySelectorAll('.day-card');
                 cards.forEach((c, idx) => {
-                    // Need to map grid index back to dayId
                     const gridDayStart = this.state.currentWeek * 7;
                     const currentId = gridDayStart + idx;
                     c.classList.toggle('selected', currentId === dayIndex);
@@ -1167,7 +1350,10 @@
                 document.getElementById('viewPurpose').textContent = d.purpose;
                 document.getElementById('viewMenu').textContent = d.menu;
                 document.getElementById('viewRpe').textContent = d.rpe;
-                document.getElementById('viewPace').textContent = d.pace;
+                // Pace: show manual + auto lines
+                const auto = this.buildAutoPaceText(d);
+                const paceText = auto ? `${d.pace || ''}\n\n【自動換算】\n${auto}` : (d.pace || '');
+                document.getElementById('viewPace').textContent = paceText;
                 document.getElementById('viewPoints').textContent = d.points;
                 document.getElementById('viewStrength').textContent = d.strength;
                 document.getElementById('viewCaution').textContent = d.caution;
@@ -1185,7 +1371,7 @@
                 document.getElementById('editCaution').value = d.caution || '';
                 const checkboxes = document.querySelectorAll('input[name="editTags"]');
                 checkboxes.forEach(cb => {
-                    cb.checked = d.tags.includes(cb.value);
+                    cb.checked = (d.tags || []).includes(cb.value);
                 });
             }
             saveCurrentDay() {
@@ -1194,25 +1380,25 @@
                 const tags = [];
                 document.querySelectorAll('input[name="editTags"]:checked').forEach(cb => tags.push(cb.value));
                 const updated = {
+                    ...this.data.plan[id],
                     dayId: id,
                     title: document.getElementById('editTitle').value,
                     purpose: document.getElementById('editPurpose').value,
                     menu: document.getElementById('editMenu').value,
                     points: document.getElementById('editPoints').value,
-                    rpe: document.getElementById('editRpe').value,
+                    rpe: Number(document.getElementById('editRpe').value),
                     pace: document.getElementById('editPace').value,
                     strength: document.getElementById('editStrength').value,
                     caution: document.getElementById('editCaution').value,
-                    tags: tags
+                    tags
                 };
+                // Keep paceCalc as-is unless user edits JSON via export/import
                 this.data.plan[id] = updated;
                 this.saveToStorage();
-                // Refresh UI
                 this.renderGrid();
                 this.renderDetail(id);
                 alert('保存しました');
             }
-            // --- Import / Export ---
             showExportModal() {
                 this.el.modal.classList.add('show');
                 this.el.ioText.value = JSON.stringify(this.data, null, 2);
@@ -1226,15 +1412,15 @@
                 try {
                     const json = this.el.ioText.value;
                     const parsed = JSON.parse(json);
-                    // Simple validation
                     if (!parsed.plan || !Array.isArray(parsed.plan)) throw new Error('Invalid format');
                     if (confirm('現在のデータを上書きして読み込みますか？')) {
                         this.data = parsed;
-                        // Ensure new fields exist if importing old data
-                        if (!this.data.pb1500) this.data.pb1500 = '';
+                        if (!this.data.targets) this.data.targets = { t1500: '', t800: '' };
                         this.saveToStorage();
                         this.el.startDate.value = this.data.startDate;
-                        this.init(); // Re-init UI
+                        if (this.el.t1500) this.el.t1500.value = this.data.targets.t1500 || '';
+                        if (this.el.t800) this.el.t800.value = this.data.targets.t800 || '';
+                        this.renderGrid();
                         this.el.modal.classList.remove('show');
                         alert('読み込み完了');
                     }
@@ -1242,73 +1428,8 @@
                     alert('JSONデータの読み込みに失敗しました。形式を確認してください。');
                 }
             }
-            // --- Pace Calculator ---
-            showPaceCalc() {
-                this.el.paceModal.classList.add('show');
-                if (this.data.pb1500) {
-                    this.el.pbInput.value = this.data.pb1500;
-                    this.calculatePaces();
-                }
-            }
-            calculatePaces() {
-                const input = this.el.pbInput.value.trim();
-                if (!input) return;
-                // Parse "mm:ss" or "m:ss"
-                const parts = input.split(':');
-                let totalSeconds = 0;
-                if (parts.length === 2) {
-                    totalSeconds = parseInt(parts[0]) * 60 + parseInt(parts[1]);
-                } else if (parts.length === 1 && !isNaN(parts[0])) {
-                    // Treat as raw seconds if just number? Or minutes? Let's assume error or seconds
-                    // standard user writes 4:30
-                    totalSeconds = parseInt(parts[0]); // fallback if they write seconds directly
-                } else {
-                    alert('形式は "分:秒" (例 4:30) で入力してください');
-                    return;
-                }
-                if (isNaN(totalSeconds) || totalSeconds <= 0) return;
-                // Save PB
-                this.data.pb1500 = input;
-                this.saveToStorage();
-                const pace1500 = totalSeconds / 1.5; // per km (seconds)
-                const pace400_1500 = totalSeconds * (400 / 1500);
-                // Define Zones
-                // Logic: 
-                // 1500m Race Pace: 100%
-                // 3000m Pace: approx 1.08x
-                // 5000m Pace: approx 1.15x
-                // Threshold (T): approx 1.25x
-                // Easy (Jog): approx 1.6x ~ 1.75x
-                const rows = [
-                    { name: '1500m RP (レースペース)', ratio: 1.0 },
-                    { name: '3000m ペース目安', ratio: 1.08 },
-                    { name: '5000m ペース目安', ratio: 1.15 },
-                    { name: '閾値 (Threshold)', ratio: 1.25 },
-                    { name: 'ジョグ (Easy) 速め', ratio: 1.6 },
-                    { name: 'ジョグ (Easy) ゆっくり', ratio: 1.75 }
-                ];
-                let html = '';
-                rows.forEach(r => {
-                    const secPerKm = pace1500 * r.ratio;
-                    const secPer400 = (secPerKm / 1000) * 400;
-                    html += `
-                <tr>
-                    <td style="padding:8px; border:1px solid #ddd;">${r.name}</td>
-                    <td style="padding:8px; border:1px solid #ddd; font-weight:bold;">${this.fmtTime(secPer400)}</td>
-                    <td style="padding:8px; border:1px solid #ddd;">${this.fmtTime(secPerKm)}</td>
-                </tr>
-            `;
-                });
-                this.el.paceTable.innerHTML = html;
-                this.el.paceResult.style.display = 'block';
-            }
-            fmtTime(seconds) {
-                const m = Math.floor(seconds / 60);
-                const s = Math.round(seconds % 60);
-                return `${m}:${s.toString().padStart(2, '0')}`;
-            }
         }
-        // Start App
+        // Start
         const app = new App();
     </script>
 </body>
